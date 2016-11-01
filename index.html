@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    html, body {
+      margin: 0;
+      overflow: hidden;
+      font-family: monospace;
+    }
+    #layers {
+      float: right;
+      vertical-align: top;
+      height: 100vh;
+      width: 200px;
+      background-color: #235C69;
+    }
+    #board {
+      vertical-align: top;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .layer {
+      position: relative;
+      color: #FEFEFD;
+      border: 2px solid black;
+      border-radius: 4px;
+      font-size: 24px;
+      padding: 4px;
+      text-align: center;
+      -moz-user-select: -moz-none;
+      -khtml-user-select: none;
+      -webkit-user-select: none;
+      -o-user-select: none;
+      user-select: none;
+    }
+    .layer:hover {
+      background-color: #577B84;
+      cursor: pointer;
+    }
+    canvas {
+      position: absolute;
+    }
+  </style>
+
+</head>
+<body>
+  <div id='layers'>
+  </div>
+  <div id='board'>
+    <canvas id='walls'></canvas>
+    <canvas id='floor'></canvas>
+  </div>
+</body>
+<script src='uniqueId.js'></script>
+<script src='MouseEvent.js'></script>
+<script src='Board.js'></script>
+<script src='Workspace.js'></script>
+<script src='Camera.js'></script>
+<script src='Screen.js'></script>
+<script src='Polygon.js'></script>
+<script src='Square.js'></script>
+<script src='layers.js'></script>
+<script src='init.js'></script>
+</html>
