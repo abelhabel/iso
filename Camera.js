@@ -23,14 +23,16 @@ Camera.prototype.setBB = function() {
 Camera.prototype.render = function(workspace, layer) {
   var tiles = workspace.getGridTilesOnObject(this);
   var c = layer.screen.context;
-
   tiles.forEach((t) => {
-    Object.keys(t).forEach((key) => t[key].render(layer.screen, this.xmin, this.ymin));
+    Object.keys(t).forEach((key) => {
+      if(t[key].layerId != layer.id) return;
+      t[key].render(layer.screen, this.xmin, this.ymin)
+    });
   })
 }
 
 Camera.prototype.clear = function() {
-  Layer.layers.forEach((l) => l.screen.renderBackground())
+  // Layer.layers.forEach((l) => l.screen.renderBackground())
 }
 
 if(typeof module != 'undefined') module.exports = Camera;

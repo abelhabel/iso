@@ -6,8 +6,10 @@
       margin: 0;
       overflow: hidden;
       font-family: monospace;
+      font-size: 16px;
+      background-color: #DDD;
     }
-    #layers {
+    #side-panel {
       float: right;
       vertical-align: top;
       height: 100vh;
@@ -18,7 +20,11 @@
       vertical-align: top;
       height: 100vh;
       overflow: hidden;
+      position: relative;
+      top: 0;
+      left: 0;
     }
+
     .layer {
       position: relative;
       color: #FEFEFD;
@@ -37,28 +43,101 @@
       background-color: #577B84;
       cursor: pointer;
     }
+    .panel {
+      position: fixed;
+      width: 200px;
+      right: 0;
+      bottom: 0;
+    }
+    .button {
+      padding: 24px;
+      display: inline-block;
+      float: left;
+      vertical-align: bottom;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #577B84;
+    }
     canvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+    }
+
+    .screen {
       position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .side-panel-title {
+      text-align: left;
+      color: white;
+      background-color: darkolivegreen;
+      border-bottom: 1px solid gray;
+      border-top: 1px solid gray;
+      cursor: pointer;
+    }
+    .arrow {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      display: inline-block;
+      vertical-align: bottom;
+      width: 50%;
+      text-align: center;
+      color: white;
+      cursor: pointer;
+    }
+    .arrow:hover {
+      background-color: #577B84;
+    }
+    #toolbar {
+      min-height: 24px;
+    }
+    .tool {
+      display: inline-block;
+    }
+    .float-right {
+      float: right;
+      padding-left: 6px;
+      padding-right: 6px;
     }
   </style>
 
 </head>
 <body>
-  <div id='layers'>
+  <div id="side-panel">
+    <div class='side-panel-title' data-for='toolbar'>Toolbar<span data-model='Toolbar' class='float-right'>+</span></div>
+    <div id='toolbar'></div>
+    <div class='side-panel-title' data-for='layers'>Layers<span data-model='Layer' class='float-right'>+</span></div>
+    <div id='layers'></div>
+    <div class='side-panel-title' data-for='tilesets'>Tilesets<span data-model='Tileset' class='float-right'>+</span></div>
+    <div id='tilesets'></div>
+  </div>
+  <div class='panel'>
+    <div class='button' id='save-button'>Save</div>
   </div>
   <div id='board'>
-    <canvas id='walls'></canvas>
-    <canvas id='floor'></canvas>
+
   </div>
 </body>
-<script src='uniqueId.js'></script>
-<script src='MouseEvent.js'></script>
-<script src='Board.js'></script>
-<script src='Workspace.js'></script>
-<script src='Camera.js'></script>
-<script src='Screen.js'></script>
-<script src='Polygon.js'></script>
-<script src='Square.js'></script>
-<script src='layers.js'></script>
-<script src='init.js'></script>
+<script src='/HTML.js'></script>
+<script src='/uniqueId.js'></script>
+<script src='/ajax.js'></script>
+<script src='/Cache.js'></script>
+<script src='/Canvas.js'></script>
+<script src='/Toolbar.js'></script>
+<script src='/TileSet.js'></script>
+<script src='/MouseEvent.js'></script>
+<script src='/Button.js'></script>
+<script src='/Popup.js'></script>
+<script src='/Board.js'></script>
+<script src='/Workspace.js'></script>
+<script src='/Camera.js'></script>
+<script src='/Screen.js'></script>
+<script src='/Polygon.js'></script>
+<script src='/Tile.js'></script>
+<script src='/Layer.js'></script>
+<script src='/init.js'></script>
 </html>

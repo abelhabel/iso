@@ -1,11 +1,88 @@
+const go = {};
 window.addEventListener('load', () => {
-  HTMLCollection.prototype.sort = Array.prototype.sort;
-  HTMLCollection.prototype.forEach = Array.prototype.forEach;
-  HTMLCollection.prototype.map = Array.prototype.map;
+  // Set up constructors
+  go.cotr = {
+    Tileset: Tileset,
+    Cache: Cache,
+    Tile: Tile,
+    Button: Button,
+    Camera: Camera,
+    Workspace: Workspace,
+    Popup: Popup,
+    Screen: Screen,
+    Toolbar: Toolbar,
+    MouseEvent: MouseEvent
+  };
+
+  // add DOM events
+  document.getElementsByClassName('float-right').forEach((tag) => {
+    tag.addEventListener('click', (e) => {
+      if(tag.dataset.model == 'Layer') {
+        var name = prompt("Name");
+        var c = Screen.container;
+        console.log(c.offsetWidth, c.offsetHeight);
+        var w = c.offsetWidth;
+        var h = c.offsetHeight;
+        // var canvas = new Canvas(w, h)
+        var screen = new Screen(w, h);
+        screen.render();
+        var layer = new Layer(name, screen);
+        layer.render();
+      }
+      if(tag.dataset.model == 'Tileset') {
+        var a = prompt('url, x, y, w, h, scale');
+        a = a.split(',').map((word) => word.trim());
+        var t = new Tileset(
+          '/image/' +a[0],
+          Number(a[1]),
+          Number(a[2]),
+          Number(a[3]),
+          Number(a[4]),
+          Number(a[5])
+        );
+        t.fetching.then(() => t.render());
+      }
+      e.stopPropagation();
+    }, false);
+  });
+
+  // Set up database
+  go.db = {
+    maps: new Cache('maps', Workspace),
+    tilesets: new Cache('tilesets', Tileset),
+    layers: new Cache('layers', Layer),
+    screens: new Cache('screens', Screen)
+  };
+
+  // Set up Screens
+  Tileset.render();
+
+  // Load Layers
+  // new TileSet(
+  //   '/image/http://orig01.deviantart.net/0f53/f/2011/273/b/e/tile_elements_ii_by_ayene_chan-d4becnf.png',
+  //   32, 32, 288, 256, 2
+  // );
+
+  document.getElementsByClassName('side-panel-title').forEach((tag) => {
+    tag.expanded = true;
+    tag.addEventListener('click', function(e) {
+      console.log('clicked', tag.expanded)
+      tag.expanded = !tag.expanded;
+      if(tag.expanded) {
+        document.getElementById(tag.dataset.for).style.display = 'block';
+      } else {
+        document.getElementById(tag.dataset.for).style.display = 'none';
+      }
+    }, false)
+  });
+
+
   var layers = document.getElementById('layers');
   var board = new Board(document.getElementById('board'));
   var workspace = new Workspace(10000, 10000, 64, 64);
+  workspace.load();
   var camera = new Camera(5000, 5000, board.w, board.h);
+
   var moveMode = false, space = 32;;
   window.addEventListener('keydown', (e) => {
     if(e.keyCode = space) {
@@ -17,18 +94,35 @@ window.addEventListener('load', () => {
       moveMode = false;
     };
   }, false);
-  board.down = board.on('mousedown', (e, b) => {
+
+  document.getElementById('save-button').addEventListener('click', (e) => {
+    console.log('save workspace')
+    workspace.save();
+  }, false);
+  var tilesets = go.db.tilesets.renderList(false, (map) => {
+    tilesets.selected = map;
+  });
+  console.log(tilesets)
+  var loadButton = new Button('Maps', 'button', () => {
+    var pop = new Popup('Load Map', tilesets)
+    console.log(pop)
+  });
+
+  var panel = document.getElementsByClassName('panel')[0];
+  panel.appendChild(loadButton.tag);
+
+  board.on('mousedown', (e, b) => {
     if(!moveMode) return
     var x = e.offsetX;
     var y = e.offsetY;
     var move = board.on('mousemove', (e, b) => {
-      camera.x += e.offsetX - x;
-      camera.y += e.offsetY - y;
+      camera.x -= e.offsetX - x;
+      camera.y -= e.offsetY - y;
       x = e.offsetX;
       y = e.offsetY;
       camera.setBB();
       camera.clear();
-      camera.render(workspace, activeLayer);
+      camera.render(workspace, go.activeLayer);
     });
 
     var up = board.on('mouseup', (e, b) => {
@@ -43,85 +137,96 @@ window.addEventListener('load', () => {
     h: 64
   };
   var activeLayer;
-  var floorScreen = new Screen(
-    board.w,
-    board.h,
-    document.getElementById('floor')
-  );
-  floorScreen.fillStyle = '#AA6F35';
-  floorScreen.renderBackground();
-  floorScreen.face = 'top';
-  var wallsScreen = new Screen(
-    board.w,
-    board.h,
-    document.getElementById('walls')
-  );
-  wallsScreen.face = 'right';
-  var floorLayer = new Layer('Floor', floorScreen);
-  var wallsLayer = new Layer('Walls', wallsScreen);
-
-  floorLayer.render();
-  wallsLayer.render();
-
-  var reorder = function(layer) {
-    var arr = layers.children.map((l) => l);
-    arr = arr.sort((c, n) => {
-      return parseInt(c.offsetTop) > parseInt(n.offsetTop) ? 1 : -1;
-    });
-    arr.forEach((c, i) => {
-      layers.removeChild(c);
-      layers.appendChild(arr[i]);
-    });
-    // layer.container.style.top = 0;
-  }
-
-  var dragndrop = (e, layer) => {
-    layer.select();
-    // activeLayer && activeLayer.clearGrid();
-    activeLayer = layer;
-    // grid = activeLayer.drawGrid();
-    var tag = layer.container;
-    tag.style.zIndex = 1;
-    var x = e.x;
-    var y = e.y;
-    var move = (e2, layer) => {
-      layer.container.style.top = e2.y - y + 'px';
-    };
-    var up = (e3, layer) => {
-      reorder(layer);
-      layer.container.style.zIndex = 0;
-
-
-      layer.detach('mousemove', moveHandler);
-      layer.detach('mouseup', upHandler);
-      layer.container.style.top = 0;
-    };
-    var moveHandler = layer.on('mousemove', move);
-    var upHandler = layer.on('mouseup', up)
-  };
-
-  floorLayer.on('mousedown', dragndrop);
-  wallsLayer.on('mousedown', dragndrop);
+  // var floorScreen = new Screen(
+  //   board.w,
+  //   board.h,
+  //   document.getElementById('floor')
+  // );
+  // floorScreen.fillStyle = '#AA6F35';
+  // floorScreen.renderBackground();
+  // floorScreen.face = 'top';
+  // var wallsScreen = new Screen(
+  //   board.w,
+  //   board.h,
+  //   document.getElementById('walls')
+  // );
+  // wallsScreen.face = 'right';
+  // var floorLayer = new Layer('Floor', floorScreen);
+  // var wallsLayer = new Layer('Walls', wallsScreen);
+  // var decorationLayer = new Layer('Decorations', wallsScreen);
+  //
+  // floorLayer.render();
+  // wallsLayer.render();
+  // decorationLayer.render();
+  // camera.render(workspace, floorLayer);
+  // var reorder = function(layer) {
+  //   var arr = layers.children.map((l) => l);
+  //   arr = arr.sort((c, n) => {
+  //     return parseInt(c.offsetTop) > parseInt(n.offsetTop) ? 1 : -1;
+  //   });
+  //   arr.forEach((c, i) => {
+  //     layers.removeChild(c);
+  //     layers.appendChild(arr[i]);
+  //   });
+  //   // layer.container.style.top = 0;
+  // }
+  //
+  // var dragndrop = (e, layer) => {
+  //   layer.select();
+  //   // activeLayer && activeLayer.clearGrid();
+  //   activeLayer = layer;
+  //   // grid = activeLayer.drawGrid();
+  //   var tag = layer.container;
+  //   tag.style.zIndex = 1;
+  //   var x = e.x;
+  //   var y = e.y;
+  //   var move = (e2, layer) => {
+  //     layer.container.style.top = e2.y - y + 'px';
+  //   };
+  //   var up = (e3, layer) => {
+  //     reorder(layer);
+  //     layer.container.style.zIndex = 0;
+  //
+  //
+  //     layer.detach('mousemove', moveHandler);
+  //     layer.detach('mouseup', upHandler);
+  //     layer.container.style.top = 0;
+  //   };
+  //   var moveHandler = layer.on('mousemove', move);
+  //   var upHandler = layer.on('mouseup', up)
+  // };
+  //
+  // floorLayer.on('mousedown', dragndrop);
+  // wallsLayer.on('mousedown', dragndrop);
+  // decorationLayer.on('mousedown', dragndrop);
 
   board.on('mousedown', (e) => {
+    if(!go.activeLayer) return;
     if(moveMode) return;
     var ox = camera.xmin;
     var oy = camera.ymin;
-    var p = new Square(ox + e.offsetX, oy + e.offsetY, tile.w, tile.h);
-    workspace.addToGrid(p, true);
-    var t = workspace.getGridTile(p.x, p.y);
-    floorScreen.renderBackground();
-    camera.render(workspace, activeLayer);
-    lx = e.x, ly = e.y;
     var lt = workspace.getGridTile(ox + e.offsetX, oy + e.offsetY);
+    if(lt.size) {
+      workspace.purgeCell(lt);
+      return camera.render(workspace, go.activeLayer);
+    }
+    var swatch = Toolbar.tools.swatch.content;
+    console.log('draw tile on layer', go.activeLayer)
+    var p = new Tile(ox + e.offsetX, oy + e.offsetY, tile.w, tile.h, swatch, go.activeLayer.id);
+    var ct = workspace.addToCell(p, true);
+    var t = workspace.getGridTile(p.x, p.y);
+    camera.render(workspace, go.activeLayer);
+    lx = e.x, ly = e.y;
     var move = board.on('mousemove', (e, b) => {
-      if(lt != workspace.getGridTile(ox + e.offsetX, oy + e.offsetY)) {
-        var p = new Square(ox + e.offsetX, oy + e.offsetY, tile.w, tile.h);
-        workspace.addToGrid(p, true);
+      var nlt = workspace.getGridTile(ox + e.offsetX, oy + e.offsetY);
+      if(lt.id != nlt.id) {
+        if(nlt.size) return
+        var p = new Tile(ox + e.offsetX, oy + e.offsetY, tile.w, tile.h, swatch, go.activeLayer.id);
+        workspace.addToCell(p, true);
         var t = workspace.getGridTile(p.x, p.y);
-        floorScreen.renderBackground();
-        camera.render(workspace, activeLayer);
+        camera.render(workspace, go.activeLayer);
         lt = workspace.getGridTile(ox + e.offsetX, oy + e.offsetY);
+
       }
 
     });
