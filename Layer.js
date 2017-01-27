@@ -1,10 +1,14 @@
-function Layer(name, screen) {
-  this.id = uniqueId();
+function Layer(name, screenId) {
+  var o = {};
+  if(typeof name === 'object') {
+    o = name;
+  }
+  this.id = o.id || uniqueId();
   this.container = document.createElement('div');
   this.container.className = 'layer';
-  this.name = name;
+  this.name = o.name || name;
   this.container.textContent = this.name;
-  this.screen = screen;
+  this.screenId = o.screenId || screenId;
   this.mouseEvents = {};
   this.on('mousedown', dragndrop);
   this.on('dblclick', layerSettings);
@@ -14,6 +18,10 @@ function Layer(name, screen) {
 Layer.layers = [];
 
 Layer.container = document.getElementById('layers')
+
+Layer.render = function() {
+  this.layers.forEach((l) => l.render());
+}
 
 Layer.prototype.render = function() {
   this.container.addEventListener('click', () => this.select() , false);
@@ -28,6 +36,10 @@ Layer.prototype.on = function(event, fn) {
 
 Layer.prototype.detach = function(event, fn) {
   this.container.removeEventListener(event, fn);
+}
+
+Layer.prototype.save = function() {
+  go.db.layers.set(this.id, this);
 }
 
 Layer.prototype.drawGrid = function() {
@@ -136,13 +148,14 @@ function layerSettings(e, layer) {
       visible: this.checked
     });
   }, false);
-  var pop = new Popup('Layer settings', content, buttons);
+  new Popup('Layer settings', content, buttons);
 }
 
 Layer.prototype.select = function() {
   Layer.layers.forEach((layer) => layer.container.style.removeProperty('background-color'));
   this.container.style.backgroundColor = '#02404E';
   go.activeLayer = this;
+  Layer.activeLayer = this;
 }
 
 Layer.prototype.clearGrid = function() {

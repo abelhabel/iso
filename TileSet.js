@@ -141,7 +141,7 @@ Tileset.prototype.render = function() {
   arrowLeft.on('click', () => this.nextPart(true));
   arrowRight.on('click', () => this.nextPart());
   this.part.canvas.addEventListener('click', () => {
-    Toolbar.setSwatch(this.part.canvas);
+    Swatch.setSwatch(this.part.canvas);
   }, false);
   this.part.canvas.addEventListener('mouseenter', () => {
     del.style.display = 'block';

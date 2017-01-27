@@ -10,7 +10,6 @@ window.addEventListener('load', () => {
     Workspace: Workspace,
     Popup: Popup,
     Screen: Screen,
-    Toolbar: Toolbar,
     MouseEvent: MouseEvent
   };
 
@@ -26,8 +25,9 @@ window.addEventListener('load', () => {
         // var canvas = new Canvas(w, h)
         var screen = new Screen(w, h);
         screen.render();
-        var layer = new Layer(name, screen);
+        var layer = new Layer(name, screen.id);
         layer.render();
+        layer.save();
       }
       if(tag.dataset.model == 'Tileset') {
         var a = prompt('url, x, y, w, h, scale');
@@ -53,9 +53,17 @@ window.addEventListener('load', () => {
     layers: new Cache('layers', Layer),
     screens: new Cache('screens', Screen)
   };
+  // Set up tool functionality
+  const tools = getTools();
+  //Load tools
+  new Tool({id: false, name: 'Select', image: '/image/tool-select.png', activate: tools.select});
+  new Tool({id: false, name: 'Paint', image: '/image/tool-paint.png', activate: tools.paint});
+
+  Tool.render();
 
   // Set up Screens
   Tileset.render();
+  Layer.render();
 
   // Load Layers
   // new TileSet(
@@ -111,26 +119,26 @@ window.addEventListener('load', () => {
   var panel = document.getElementsByClassName('panel')[0];
   panel.appendChild(loadButton.tag);
 
-  board.on('mousedown', (e, b) => {
-    if(!moveMode) return
-    var x = e.offsetX;
-    var y = e.offsetY;
-    var move = board.on('mousemove', (e, b) => {
-      camera.x -= e.offsetX - x;
-      camera.y -= e.offsetY - y;
-      x = e.offsetX;
-      y = e.offsetY;
-      camera.setBB();
-      camera.clear();
-      camera.render(workspace, go.activeLayer);
-    });
-
-    var up = board.on('mouseup', (e, b) => {
-
-      board.detach('mousemove', move);
-      board.detach('mouseup', up);
-    });
-  })
+  // board.on('mousedown', (e, b) => {
+  //   if(!moveMode) return
+  //   var x = e.offsetX;
+  //   var y = e.offsetY;
+  //   var move = board.on('mousemove', (e, b) => {
+  //     camera.x -= e.offsetX - x;
+  //     camera.y -= e.offsetY - y;
+  //     x = e.offsetX;
+  //     y = e.offsetY;
+  //     camera.setBB();
+  //     camera.clear();
+  //     camera.render(workspace, go.activeLayer);
+  //   });
+  //
+  //   var up = board.on('mouseup', (e, b) => {
+  //
+  //     board.detach('mousemove', move);
+  //     board.detach('mouseup', up);
+  //   });
+  // })
   var grid = [];
   var tile = {
     w: 64,
@@ -202,40 +210,9 @@ window.addEventListener('load', () => {
 
   board.on('mousedown', (e) => {
     if(!go.activeLayer) return;
-    if(moveMode) return;
-    var ox = camera.xmin;
-    var oy = camera.ymin;
-    var lt = workspace.getGridTile(ox + e.offsetX, oy + e.offsetY);
-    if(lt.size) {
-      workspace.purgeCell(lt);
-      return camera.render(workspace, go.activeLayer);
-    }
-    var swatch = Toolbar.tools.swatch.content;
-    console.log('draw tile on layer', go.activeLayer)
-    var p = new Tile(ox + e.offsetX, oy + e.offsetY, tile.w, tile.h, swatch, go.activeLayer.id);
-    var ct = workspace.addToCell(p, true);
-    var t = workspace.getGridTile(p.x, p.y);
-    camera.render(workspace, go.activeLayer);
-    lx = e.x, ly = e.y;
-    var move = board.on('mousemove', (e, b) => {
-      var nlt = workspace.getGridTile(ox + e.offsetX, oy + e.offsetY);
-      if(lt.id != nlt.id) {
-        if(nlt.size) return
-        var p = new Tile(ox + e.offsetX, oy + e.offsetY, tile.w, tile.h, swatch, go.activeLayer.id);
-        workspace.addToCell(p, true);
-        var t = workspace.getGridTile(p.x, p.y);
-        camera.render(workspace, go.activeLayer);
-        lt = workspace.getGridTile(ox + e.offsetX, oy + e.offsetY);
+    Tool.selectedTool.activate && Tool.selectedTool.activate(
+      board, e, workspace, camera, Layer.activeLayer);
 
-      }
-
-    });
-
-    var up = board.on('mouseup', (e, b) => {
-
-      board.detach('mousemove', move);
-      board.detach('mouseup', up);
-    });
   });
 
 

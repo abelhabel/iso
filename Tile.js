@@ -11,6 +11,10 @@ function Tile(x, y, w, h, image, layerId) {
   this.strokeStyle = '#D6B08B'
   this.image = image;
   this.layerId = layerId;
+  this.stats = new Stats({
+    walkable: true,
+    breakable: false
+  });
   this.setBB();
 };
 

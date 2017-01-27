@@ -15,7 +15,6 @@ function readFiles(dirname, type, encoding) {
 
 var files = readFiles(__dirname + '/', 'js');
 var images = readFiles(__dirname + '/images/', 'png', 'binary');
-console.log('images', Object.keys(images));
 var index = fs.readFileSync('./index.html');
 var proxy = require('./proxy');
 
@@ -32,7 +31,6 @@ var server = http.createServer(function(req, res) {
     var image = images[url];
     if(image) {
       res.writeHead(200, {'Content-Type': 'image/png'});
-      console.log('responding with local image', image)
       res.end(image, 'binary');
     } else {
       proxy(url, req, res);

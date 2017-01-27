@@ -23,17 +23,18 @@ Workspace.prototype.gridify = function() {
   var grid = {};
   for(var i = 0; i < this.width; i += this.gridSizeX) {
     for(var j = 0; j < this.height; j += this.gridSizeY) {
-      grid[i + ":" + j] = {
-        xmin: i,
-        xmax: i + this.gridSizeX,
-        ymin: j,
-        ymax: j + this.gridSizeY,
-        x: i + this.gridSizeX/2,
-        y: j + this.gridSizeY/2,
-        size: 0,
-        content: {},
-        id: uniqueId()
-      };
+      grid[i + ":" + j] = new Cell(i + this.gridSizeX/2, j + this.gridSizeY/2, this.gridSizeX, this.gridSizeY);
+      // {
+      //   xmin: i,
+      //   xmax: i + this.gridSizeX,
+      //   ymin: j,
+      //   ymax: j + this.gridSizeY,
+      //   x: i + this.gridSizeX/2,
+      //   y: j + this.gridSizeY/2,
+      //   size: 0,
+      //   content: {},
+      //   id: uniqueId()
+      // };
     }
   }
   this.grid = grid;
@@ -141,10 +142,19 @@ Workspace.prototype.load = function() {
   console.log('loaded grid')
 }
 
-Workspace.prototype.purgeCell = function(cell) {
-  cell.size = 0;
-  cell.content = {};
+Workspace.prototype.purgeCell = function(cell, layerId) {
+  if(layerId) {
+    var tile = cell.onLayer(layerId);
+    if(tile) {
+      delete cell.content[tile.id];
+      cell.size -= 1;
+    }
+  } else {
+    cell.content = {};
+    cell.size = 0;
+  }
 }
+
 
 Workspace.prototype.removeFromGrid = function(obj, dolog) {
   if(dolog) console.time('removeFromGrid');
@@ -166,4 +176,43 @@ Workspace.prototype.removeFromGrid = function(obj, dolog) {
 Workspace.prototype.updateGrid = function(x, y, obj, snap) {
   this.deleteOnId(obj.id);
   this.addToGrid(obj, snap);
+};
+
+function Cell(x, y, w, h) {
+  this.id = uniqueId();
+  this.x = x;
+  this.y = y;
+  this.w = w;
+  this.h = h;
+  this.content = {};
+  this.size = 0;
+  this.stats = new Stats({walkable: true, breakable: false});
+  this.setBB();
+}
+
+Cell.prototype.onLayer = function(layerId) {
+  var out;
+  Object.keys(this.content).find((key) => {
+    if(this.content[key].layerId == layerId) {
+      return out = this.content[key];
+    }
+  })
+  return out;
+}
+
+Cell.prototype.add = function(obj, snap) {
+  if(snap) {
+    obj.x = this.x;
+    obj.y = this.y;
+    obj.setBB();
+  }
+  if(!this.content[obj.id]) this.size += 1;
+  this.content[obj.id] = obj;
+}
+
+Cell.prototype.setBB = function() {
+  this.xmin = this.x - this.w/2;
+  this.xmax = this.x + this.w/2;
+  this.ymin = this.y - this.h/2;
+  this.ymax = this.y + this.h/2;
 };
