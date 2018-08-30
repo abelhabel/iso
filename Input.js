@@ -1,7 +1,6 @@
 function Input(type, stat, label, val) {
   var typeModel = val.constructor;
   var event = getEventType(typeModel);
-  console.log(event.type, val)
   this.container = document.createElement('div');
   this.input = document.createElement('input');
   this.input.type = getInputType(typeModel);
@@ -15,9 +14,7 @@ function Input(type, stat, label, val) {
   this.container.appendChild(this.input);
   this.input.addEventListener(event.type, (e) => {
     stat[label] = typeModel(e.target[event.key]);
-    console.log(stat, typeModel(e.target[event.key]))
   }, false);
-  console.log(this)
 }
 
 function getInputType(model) {

@@ -14,20 +14,36 @@ function Camera(x, y, w, h) {
 }
 
 Camera.prototype.setBB = function() {
-  this.xmin = this.x - this.hw;
-  this.xmax = this.x + this.hw;
-  this.ymin = this.y - this.hh;
-  this.ymax = this.y + this.hh;
+  this.xmin = Math.max(0, this.x - this.hw);
+  this.xmax = Math.min(this.w, this.x + this.hw);
+  this.ymin = Math.max(0, this.y - this.hh);
+  this.ymax = Math.min(this.h, this.y + this.hh);
 };
 
+Camera.prototype.renderAll = function(workspace) {
+  Layer.layers.forEach(l => this.render(workspace, l));
+}
+
 Camera.prototype.render = function(workspace, layer) {
-  var tiles = workspace.getGridTilesOnObject(this);
-  var c = layer.screen.context;
-  tiles.forEach((t) => {
-    Object.keys(t).forEach((key) => {
-      if(t[key].layerId != layer.id) return;
-      t[key].render(layer.screen, this.xmin, this.ymin)
+  layer.screen.context.clearRect(0, 0, this.w, this.h);
+  var cells = workspace.getGridTilesOnObject(this);
+  cells.forEach(cell => {
+    Object.keys(cell.content).forEach((key) => {
+      let t = cell.content[key];
+      if(layer && t.layerId != layer.id) return;
+      t.render(cell.x - this.xmin, cell.y - this.ymin, cell.w, cell.h);
     });
+  })
+  this.renderSelected();
+}
+
+Camera.prototype.renderSelected = function(workspace, layer) {
+  Workspace.selectedCells.forEach(c => {
+    Object.keys(c.content).forEach(key => {
+      let tile = c.content[key];
+      let layer = Layer.layers.find(l => l.id == tile.layerId);
+      layer.screen.context.strokeRect(c.x - this.xmin, c.y - this.ymin, c.w, c.h);
+    })
   })
 }
 

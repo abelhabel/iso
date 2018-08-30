@@ -2,6 +2,9 @@
 <html>
 <head>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     html, body {
       margin: 0;
       overflow: hidden;
@@ -15,6 +18,8 @@
       height: 100vh;
       width: 200px;
       background-color: #235C69;
+      z-index: 10;
+      position: relative;
     }
     #board {
       vertical-align: top;
@@ -23,6 +28,7 @@
       position: relative;
       top: 0;
       left: 0;
+      z-index: 9;
     }
 
     .layer {
@@ -55,6 +61,7 @@
       float: left;
       vertical-align: bottom;
       cursor: pointer;
+      background-color: gray;
     }
     .button:hover {
       background-color: #577B84;
@@ -97,6 +104,15 @@
     }
     .tool {
       display: inline-block;
+      width: 64px;
+      height: 64px;
+      line-height: 64px;
+      text-align: center;
+      vertical-align: top;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 28px;
+      cursor: pointer;
     }
     .float-right {
       float: right;
@@ -108,22 +124,26 @@
 </head>
 <body>
   <div id="side-panel">
-    <div class='side-panel-title' data-for='tools'>Toolbar<span data-model='Tool' class='float-right'>+</span></div>
+    <div class='side-panel-title' data-for='tools'>Toolbar</div>
     <div id='tools'></div>
-    <div class='side-panel-title' data-for='toolbar'>Swatches<span data-model='Swatch' class='float-right'>+</span></div>
+    <div class='side-panel-title' data-for='swatches'>Swatches</div>
     <div id='swatches'></div>
+    <div class='side-panel-title' data-for='swatch-collections'>Swatch Collections</div>
+    <div id='swatch-collections'></div>
     <div class='side-panel-title' data-for='layers'>Layers<span data-model='Layer' class='float-right'>+</span></div>
     <div id='layers'></div>
     <div class='side-panel-title' data-for='tilesets'>Tilesets<span data-model='Tileset' class='float-right'>+</span></div>
     <div id='tilesets'></div>
-    <div class='side-panel-title' data-for='tilesets'>Stats<span data-model='Stats' class='float-right'>+</span></div>
+    <div class='side-panel-title' data-for='stats'>Stats<span data-model='Stats' class='float-right'>+</span></div>
     <div id='stats'></div>
+    <div class='side-panel-title' data-for='tiles'>Tiles</div>
+    <div id='tiles'></div>
   </div>
   <div class='panel'>
     <div class='button' id='save-button'>Save</div>
   </div>
-  <div id='board'>
-
+  <div id='board' style='transform: scale(1, 1)'>
+    <span id='coordinates' style='position: absolute; top:0; left:0'></span>
   </div>
 </body>
 <script src='/HTML.js'></script>
@@ -147,5 +167,6 @@
 <script src='/Polygon.js'></script>
 <script src='/Tile.js'></script>
 <script src='/Layer.js'></script>
+<script src='/Project.js'></script>
 <script src='/init.js'></script>
 </html>

@@ -9,15 +9,38 @@ function Layer(name, screenId) {
   this.name = o.name || name;
   this.container.textContent = this.name;
   this.screenId = o.screenId || screenId;
+  this.selected = o.selected;
+  if(Screen.screens[this.screenId]) {
+    this.screen = Screen.screens[this.screenId];
+
+  } else {
+    this.screen = new Screen(0,0, this.screenId);
+  }
+  this.stats = o.stats || {
+    walkable: true,
+    breakable: false
+  };
   this.mouseEvents = {};
   this.on('mousedown', dragndrop);
   this.on('dblclick', layerSettings);
   Layer.layers.push(this);
+  this.index = Layer.layers.length - 1;
+  if(this.selected) this.select();
 }
 
 Layer.layers = [];
 
 Layer.container = document.getElementById('layers')
+
+Layer.getStats = function(layerId) {
+  var l = Layer.layers.find(l => l.id == layerId);
+  if(!l) return {};
+  return l.stats;
+}
+
+Layer.save = function() {
+  Layer.layers.forEach(l => l.save());
+}
 
 Layer.render = function() {
   this.layers.forEach((l) => l.render());
@@ -39,7 +62,14 @@ Layer.prototype.detach = function(event, fn) {
 }
 
 Layer.prototype.save = function() {
-  go.db.layers.set(this.id, this);
+  return {
+    id: this.id,
+    name: this.name,
+    screenId: this.screenId,
+    stats: this.stats,
+    selected: this.selected,
+    index: this.index
+  }
 }
 
 Layer.prototype.drawGrid = function() {
@@ -60,27 +90,17 @@ Layer.prototype.drawGrid = function() {
     }
   }
   return grid;
-  // p.posx = ox = 20;
-  // p.posy = 20;
-  // for(var i = 0; i < 40; i++) {
-  //   p.posy += p.r;
-  //   p.posx = ox;
-  //   for(var j = 0; j < 40; j++) {
-  //     p.posx += p.r * 2;
-  //     p.render(this.screen);
-  //   }
-  // }
 }
 
 function reorderContainer(layer) {
-  var arr = this.layers.sort((c, n) => {
+  this.layers.sort((c, n) => {
     return parseInt(c.container.offsetTop) > parseInt(n.container.offsetTop) ? 1 : -1;
-  });
-  arr.forEach((c, i) => {
-    this.container.appendChild(arr[i].container);
-    // arr[i].screen.canvas.dataset.index = i;
-    arr[i].screen.canvas.style.zIndex = i;
-    Screen.container.appendChild(arr[i].screen.canvas)
+  })
+  .forEach((l, i) => {
+    l.index = i;
+    this.container.appendChild(l.container);
+    l.screen.canvas.style.zIndex = i;
+    Screen.container.appendChild(l.screen.canvas)
   });
   // layer.container.style.top = 0;
 }
@@ -128,14 +148,19 @@ function Wrap(tag, text) {
 
 function layerSettings(e, layer) {
   var content, buttons, invert, visible, save;
-  console.log('open layer settings')
   var content = document.createElement('div');
+  var name = document.createElement('input');
+  name.value = layer.name;
+  name.addEventListener('keyup', () => {
+    layer.name = name.value;
+    layer.container.textContent = layer.name;
+  })
   var invert = document.createElement('input');
   invert.type = 'checkbox';
   var visible = document.createElement('input');
   visible.type = 'checkbox';
   visible.checked = true;
-  content.appendMany([new Wrap(invert, 'invert'), new Wrap(visible, 'visible')]);
+  content.appendMany([new Wrap(name), new Wrap(invert, 'invert'), new Wrap(visible, 'visible')]);
 
   invert.addEventListener('click', function(e) {
     layer.screen.settings({
@@ -148,12 +173,60 @@ function layerSettings(e, layer) {
       visible: this.checked
     });
   }, false);
+
+  var onChange = (changes) => {
+    Object.assign(layer.stats, changes);
+    console.log('changes', changes);
+  }
+
+  var stats = [
+    new Checkbox('walkable', layer.stats.walkable, onChange),
+    new Checkbox('breakable', layer.stats.breakable, onChange)
+  ];
+  content.appendMany(stats.map(s => s.node));
   new Popup('Layer settings', content, buttons);
 }
 
+class Checkbox {
+  constructor(name, checked, onChange) {
+    this.name = name;
+    this.checked = !!checked;
+    this.node = this.createNode();
+    this.checkbox.checked = this.checked;
+    this.checkbox.addEventListener('change', () => {
+      this.checked = this.checkbox.checked;
+      onChange({[this.name]: this.checked});
+    })
+  }
+
+  get checkbox() {
+    return this.node.querySelector('input');
+  }
+
+  get label() {
+    return this.node.querySelector('label');
+  }
+
+  createNode() {
+    if(this.node) return this.node;
+    var d = document.createElement('div');
+    var html =  `<div>
+      <input type='checkbox' name='checkbox'>
+      <label for='checkbox'>${this.name}</label>
+    </div>`;
+    d.innerHTML = html;
+    this.node = d.firstElementChild
+    return this.node;
+  }
+}
+
 Layer.prototype.select = function() {
-  Layer.layers.forEach((layer) => layer.container.style.removeProperty('background-color'));
+  Layer.layers.forEach((layer) => {
+    layer.selected = false;
+    layer.container.style.removeProperty('background-color')
+  });
   this.container.style.backgroundColor = '#02404E';
+  this.selected = true;
   go.activeLayer = this;
   Layer.activeLayer = this;
 }

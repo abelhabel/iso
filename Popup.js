@@ -3,7 +3,7 @@ function Popup(label, content, buttons) {
   this.content = content;
   this.buttons = buttons || [];
   this.h = 440;
-  this.w = 800;
+  this.w = 400;
   this.style = {
     position: 'fixed',
     display: 'inline-block',
@@ -24,7 +24,7 @@ Popup.prototype.render = function() {
   var container = document.createElement('div');
   setStyle(container, this.style);
   var top = document.createElement('div');
-  var th = 64;
+  var th = 24;
   top.textContent = this.label || 'Label';
   top.style.height = top.style.lineHeight = th + 'px';
   top.style.textAlign = 'center';

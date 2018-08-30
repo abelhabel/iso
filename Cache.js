@@ -10,7 +10,7 @@ Cache.load = function(cache, Model) {
     store = JSON.parse(localStorage[cache]);
     if(Model) Object.keys(store).forEach((o) => new Model(store[o]))
   } catch(err) {
-    console.log('could not parse json when loading', cache, err);
+    // console.log('could not parse json when loading', cache, err);
   }
 
   return store;

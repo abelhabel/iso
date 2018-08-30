@@ -1,18 +1,29 @@
 'use strict'
-function Workspace(w, h, gridX, gridY) {
+function Workspace(w, h, gridX, gridY, grid) {
   var ws = this;
   this.id = uniqueId();
-  this.width = w || 100000;
-  this.height = h || 100000;
+  this.width = w || 10000;
+  this.height = h || 10000;
   this.backgroundColor = "#000000";
-  this.gridSizeX = gridX;
-  this.gridSizeY = gridY;
-
+  this.gridSizeX = gridX || 32;
+  this.gridSizeY = gridY || 32;
+  this.grid = grid;
   this.gridify();
-
   this.cotr = "Workspace";
 }
 
+Workspace.selectedCells = [];
+Workspace.selectCells = function(cells) {
+  if(Array.isArray(cells)) {
+    this.selectedCells = cells;
+  } else {
+    this.selectedCells = [cells];
+  }
+}
+
+Workspace.prototype.save = function() {
+  return this;
+}
 
 Workspace.prototype.updateGridSize = function(w, h) {
   this.gridSizeX = w;
@@ -23,57 +34,45 @@ Workspace.prototype.gridify = function() {
   var grid = {};
   for(var i = 0; i < this.width; i += this.gridSizeX) {
     for(var j = 0; j < this.height; j += this.gridSizeY) {
-      grid[i + ":" + j] = new Cell(i + this.gridSizeX/2, j + this.gridSizeY/2, this.gridSizeX, this.gridSizeY);
-      // {
-      //   xmin: i,
-      //   xmax: i + this.gridSizeX,
-      //   ymin: j,
-      //   ymax: j + this.gridSizeY,
-      //   x: i + this.gridSizeX/2,
-      //   y: j + this.gridSizeY/2,
-      //   size: 0,
-      //   content: {},
-      //   id: uniqueId()
-      // };
+      let key = i + ":" + j;
+      let c = new Cell(i, j, this.gridSizeX, this.gridSizeY);
+      grid[key] = c;
+      if(this.grid && this.grid[key] && this.grid[key].size) {
+        grid[key].merge(this.grid[key])
+      }
     }
   }
   this.grid = grid;
 };
 
 Workspace.prototype.getGridTile = function(x, y) {
-  x -= this.gridSizeX/2;
-  y -= this.gridSizeY/2
   var gridX = x - (x % this.gridSizeX);
   var gridY = y - (y % this.gridSizeY);
   return this.grid[gridX + ":" + gridY];
 };
 
+Workspace.prototype.getGridTilesFrom = function(sx, sy, ex, ey) {
+  var out = [];
+  for(var y = sy; y < ey; y += this.gridSizeY) {
+    for(var x = sx; x < ex; x += this.gridSizeX) {
+      out.push(this.getGridTile(x, y));
+    }
+  }
+  return out;
+}
+
 Workspace.prototype.getGridTilesOnObject = function(obj) {
   var out = [];
   for(var x = obj.xmin; x < obj.xmax; x += this.gridSizeX) {
     for(var y = obj.ymin; y < obj.ymax; y += this.gridSizeX) {
-      let tile = this.getGridTile(x, y);
-      if(tile.size) out.push(tile.content);
+      let cell = this.getGridTile(x, y);
+      if(cell && cell.size) out.push(cell);
     }
   }
   return out;
-  var d = 50;
-  var tile0 = this.getGridTile(obj.xmin - d, obj.ymin - d);
-  var tile1 = this.getGridTile(obj.xmax + d, obj.ymin - d);
-  var tile2 = this.getGridTile(obj.xmin - d, obj.ymax + d);
-  var tile3 = this.getGridTile(obj.xmax + d, obj.ymax + d);
-  var tile4 = this.getGridTile(obj.x, obj.y);
-  var arr = {};
-  tile0 && Object.keys(tile0).forEach((id) => arr[id] = (tile0[id])),
-  tile1 && Object.keys(tile1).forEach((id) => arr[id] = (tile1[id])),
-  tile2 && Object.keys(tile2).forEach((id) => arr[id] = (tile2[id])),
-  tile3 && Object.keys(tile3).forEach((id) => arr[id] = (tile3[id])),
-  tile4 && Object.keys(tile4).forEach((id) => arr[id] = (tile4[id]))
-  return arr;
 };
 
 Workspace.prototype.deleteOnId = function(id, dolog) {
-  if(dolog) console.time('deleteOnId');
   var keys = Object.keys(this.grid);
   var i = 0, l = keys.length;
   for(i; i < l; i++) {
@@ -81,7 +80,6 @@ Workspace.prototype.deleteOnId = function(id, dolog) {
       delete this.grid[keys[i]][id];
     }
   }
-  if(dolog) console.timeEnd('deleteOnId');
 }
 
 Workspace.prototype.tilesOnId = function(id) {
@@ -123,25 +121,6 @@ Workspace.prototype.addToGrid = function(obj, snap) {
   }
 };
 
-Workspace.prototype.save = function() {
-  localStorage.grid = JSON.stringify(this.grid);
-  console.log('saved grid');
-}
-
-Workspace.prototype.load = function() {
-  if(!localStorage.grid) return;
-  this.grid = JSON.parse(localStorage.grid);
-  Object.keys(this.grid).forEach((key) => {
-    if(this.grid[key].size) {
-      Object.keys(this.grid[key].content).forEach((key2) => {
-        var s = this.grid[key].content[key2];
-        this.grid[key].content[key2] = new Tile(s.x, s.y, s.w, s.h);
-      });
-    }
-  });
-  console.log('loaded grid')
-}
-
 Workspace.prototype.purgeCell = function(cell, layerId) {
   if(layerId) {
     var tile = cell.onLayer(layerId);
@@ -157,20 +136,16 @@ Workspace.prototype.purgeCell = function(cell, layerId) {
 
 
 Workspace.prototype.removeFromGrid = function(obj, dolog) {
-  if(dolog) console.time('removeFromGrid');
   for(var x = obj.xmin; x < obj.xmax; x += this.gridSizeX) {
     for(var y = obj.ymin; y < obj.ymax; y += this.gridSizeX) {
       var tile = this.getGridTile(x, y);
-      if(dolog) console.log(tile, obj.id);
       if(tile) {
         delete tile.content[obj.id];
         tile.size -= 1;
       }
 
-      if(dolog) console.log(tile);
     }
   }
-  if(dolog) console.timeEnd('removeFromGrid');
 };
 
 Workspace.prototype.updateGrid = function(x, y, obj, snap) {
@@ -178,16 +153,69 @@ Workspace.prototype.updateGrid = function(x, y, obj, snap) {
   this.addToGrid(obj, snap);
 };
 
-function Cell(x, y, w, h) {
-  this.id = uniqueId();
-  this.x = x;
-  this.y = y;
-  this.w = w;
-  this.h = h;
-  this.content = {};
-  this.size = 0;
-  this.stats = new Stats({walkable: true, breakable: false});
-  this.setBB();
+class Cell {
+  constructor(x, y, w, h) {
+    this.id = uniqueId();
+    this.x = x;
+    this.y = y;
+    this.w = w;
+    this.h = h;
+    this.content = {};
+    this.size = 0;
+  }
+
+  static get tilesContainer() {
+    return document.getElementById('tiles');
+  }
+
+  get tiles() {
+    return Object.keys(this.content).map(k => this.content[k]);
+  }
+
+  renderTilesPreview() {
+    Cell.tilesContainer.innerHTML = '';
+    this.tiles.forEach(t => {
+      var c = new Canvas(this.w, this.h);
+      t.renderPreview(c.context, 0, 0, this.w, this.h);
+      Cell.tilesContainer.appendChild(c.canvas);
+    })
+  }
+
+  get stats() {
+    var stats = {};
+    this.tiles.sort((a, b) => {
+      return a.layer.index < b.layer.index ? -1 : 1;
+    })
+    .forEach(tile => {
+      Object.assign(stats, tile.stats);
+    });
+    return new Stats(stats)
+  }
+
+  add(obj, snap) {
+    if(!this.content[obj.id]) this.size += 1;
+    this.content[obj.id] = obj;
+  }
+
+  merge(cell) {
+    Object.keys(cell.content)
+    .forEach(tileId => {
+      let tile = cell.content[tileId];
+      let ntile = new Tile(tile.swatchId, tile.layerId, tile.stats);
+      ntile.id = tileId;
+      this.add(ntile);
+    })
+  }
+}
+
+Cell.prototype.renderStats = function() {
+  this.stats.render();
+}
+
+Cell.prototype.each = function(fn) {
+  Object.keys(this.content).forEach(key => {
+    fn(this.content[key], key);
+  })
 }
 
 Cell.prototype.onLayer = function(layerId) {
@@ -200,14 +228,15 @@ Cell.prototype.onLayer = function(layerId) {
   return out;
 }
 
-Cell.prototype.add = function(obj, snap) {
-  if(snap) {
-    obj.x = this.x;
-    obj.y = this.y;
-    obj.setBB();
-  }
-  if(!this.content[obj.id]) this.size += 1;
-  this.content[obj.id] = obj;
+
+Cell.prototype.removeContent = function(layerId) {
+  Object.keys(this.content).forEach(tileId => {
+    if(layerId) {
+      let tile = this.content[tileId];
+      if(tile.layerId !== layerId) return;
+    }
+    delete this.content[tileId];
+  })
 }
 
 Cell.prototype.setBB = function() {

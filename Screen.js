@@ -1,10 +1,13 @@
 if(typeof(require) == 'function') var Helpers = require("../../public/helpers.js");
-function Screen(w, h, canvas) {
+function Screen(w, h, id) {
   // the screen object represents the physical screen,
   // or rather the view port in the browser and so,
   // its width and height should only change when
   // the view port changes
-  this.id = uniqueId();
+  w = w || Screen.container.offsetWidth;
+  w = w || Screen.container.offsetWidth;
+  h = h || Screen.container.offsetHeight;
+  this.id = id || uniqueId();
   this.canvas = document.createElement('canvas');
   this.canvas.className = 'screen';
   this.width = this.canvas.width = w;
@@ -35,7 +38,6 @@ Screen.render = function() {
 };
 
 Screen.prototype.settings = function(s) {
-  console.log('settings for screen', s)
   if(s.hasOwnProperty('visible')) {
     this.canvas.style.display = s.visible ? 'block' : 'none';
   }

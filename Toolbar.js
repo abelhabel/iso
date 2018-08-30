@@ -35,7 +35,6 @@ Tool.prototype.render = function(content) {
     this.tag.removeChild(this.content);
   }
   this.content = content;
-  console.log({content: content})
   this.tag.appendChild(content);
   return this;
 }

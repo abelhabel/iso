@@ -5,7 +5,6 @@ window.addEventListener('load', () => {
     var kv = kp.split('=');
     query[kv[0]] = kv[1];
   })
-  console.log(query);
   var rmin = Number(query.rmin) || 0,
       rmax = Number(query.rmax) || 255,
       gmin = Number(query.gmin) || 0,
@@ -19,12 +18,8 @@ window.addEventListener('load', () => {
     document.getElementById('tiles')
   );
 
-  // var tile = new Polygon(100,100, 100, 6);
-  // console.log(tile);
-  // tile.render(tiles);
 
   var polygons = Polygon.generate(525, 50,50,50,6);
-  console.log(polygons)
   var prevFS;
   polygons.forEach((p, i) => {
     var width = 2 + Math.floor(tiles.width/p.width);
